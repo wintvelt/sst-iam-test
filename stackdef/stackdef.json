@@ -1,0 +1,33 @@
+{
+  "nodes": {
+    "create.js": {
+      "name": "create.js",
+      "subs": [
+        {
+          "name": "POST /"
+        }
+      ],
+      "type": "function",
+      "cluster": "internal",
+      "isQuery": true,
+      "nodeId": "node0"
+    },
+    "POST /": {
+      "name": "POST /",
+      "type": "API",
+      "cluster": "input",
+      "isQuery": true,
+      "nodeId": "node1"
+    }
+  },
+  "edges": [
+    {
+      "name": "POST /",
+      "depType": "sub",
+      "fromName": "POST /",
+      "toName": "create.js",
+      "async": false,
+      "isQuery": true
+    }
+  ]
+}

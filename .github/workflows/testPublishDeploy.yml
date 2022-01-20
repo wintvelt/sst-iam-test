@@ -1,0 +1,192 @@
+name: CI/CD workflow
+on: 
+  push:
+    paths-ignore: # if only npm stack-output or package changed, we can ignore this update
+      - 'npm/*-stack-output.json'
+      - 'npm/package.json'
+jobs:
+  pre-deploy-tests:
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: eu-central-1
+      SECRET_PUBLISH_TOKEN: ${{ secrets.SECRET_PUBLISH_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '16.10'
+        cache: 'npm'
+    - name: set env vars
+      id: localenv
+      run: |
+        BRANCH=$(git branch --show-current)
+        if [[ $BRANCH == 'main' ]]; then
+          echo "we are on MAIN branch"
+          echo "STAGE=prod" >> $GITHUB_ENV
+        else 
+          echo "we are on DEV branch"
+          echo "STAGE=dev" >> $GITHUB_ENV
+        fi
+    - run: npm ci
+    - run: npm run build --if-present --stage ${{ env.STAGE }}
+    - run: |
+        DIR="test/pre-deploy/"
+        if [ -d "$DIR" ]
+        then
+          if [ "$(ls -A $DIR)" ]; then
+            echo "Running tests for $DIR"
+            npx sst test --passWithNoTests test/pre-deploy/*.test.*
+          else
+            echo "$DIR is Empty"
+          fi
+        else
+          echo "Folder $DIR not found."
+        fi
+
+  deploy-and-publish-dependencies:
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    needs: pre-deploy-tests
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: eu-central-1
+      SECRET_PUBLISH_TOKEN: ${{ secrets.SECRET_PUBLISH_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      PUBLISH_ENDPOINT: https://82aq1alw5h.execute-api.eu-central-1.amazonaws.com/async
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          registry-url: https://registry.npmjs.org/
+      - name: set env vars
+        id: localenv
+        run: |
+          BRANCH=$(git branch --show-current)
+          echo "::set-output name=BRANCH::$BRANCH"
+          if [[ $BRANCH == 'main' ]]; then
+            echo "we are on MAIN branch"
+            echo "STAGE=prod" >> $GITHUB_ENV
+          else 
+            echo "we are on DEV branch"
+            echo "STAGE=dev" >> $GITHUB_ENV
+          fi
+      - name: set npm exists
+        id: npm
+        run: |
+          if test -e npm; then
+            echo "npm folder exists"
+            echo "::set-output name=EXISTS::true"
+          else
+            echo "no npm folder here"
+            echo "::set-output name=EXISTS::false"
+          fi
+      - name: Read package.json
+        id: package
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./package.json
+      - name: switch to auto git user
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "github-actions"
+      - name: deploy and (if npm exists) save output in npm folder
+        run: |
+          echo "::group::npm install"
+          npm ci
+          echo "::endgroup::"
+          STAGE=${{ env.STAGE }}
+          echo "::group::deploy"
+          if [[ ${{ steps.npm.outputs.EXISTS }} == 'true' ]]; then
+            npx sst deploy --stage $STAGE --outputs-file ./npm/$STAGE-stack-output.json
+            echo "saving stack output for $STAGE in npm root"
+          else
+            npx sst deploy --stage $STAGE
+            echo "just deploy stack, no npm folder, so output not saved"
+          fi
+          echo "::endgroup::"
+      - name: Publish dependencies
+        uses: indiesdev/curl@v1
+        with:
+          url: ${{ env.PUBLISH_ENDPOINT }}
+          method: PUT
+          headers: '{ "Content-Type": "application/json", "Authorization": "Basic ${{ env.SECRET_PUBLISH_TOKEN }}" }'
+          body: '{ 
+            "ownerName": "${{ github.repository }}", 
+            "stage": "${{ env.STAGE }}", 
+            "pack": ${{ steps.package.outputs.content }}
+            }'
+          timeout: 5000
+      - name: run post-deployment read tests
+        run: |
+          DIR="test/post-deploy/"
+          if [ -d "$DIR" ]
+          then
+            if [ "$(ls -A $DIR)" ]; then
+              echo "Running tests for $DIR"
+              npx sst test --passWithNoTests test/post-deploy/*.test.*
+            else
+              echo "$DIR is Empty"
+            fi
+          else
+            echo "Folder $DIR not found."
+          fi
+          
+      - name: run post-deployment write tests (only in dev)
+        if: (env.STAGE == 'dev')
+        run: |
+          DIR="test/post-deploy-with-updates/"
+          if [ -d "$DIR" ]
+          then
+            if [ "$(ls -A $DIR)" ]; then
+              echo "Running tests for $DIR"
+              npx sst test --passWithNoTests test/post-deploy-with-updates/*.test.*
+            else
+              echo "$DIR is Empty"
+            fi
+          else
+            echo "Folder $DIR not found."
+          fi
+      - name: find out if npm folder contents changed
+        id: modified
+        uses: pheel/path-watcher-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          paths: 'npm/**/*'
+      - name: if something in npm changed - bump npm patch version and publish
+        if: steps.modified.outputs.modified
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+        run: |
+          cd npm
+          STAGE=${{ env.STAGE }}
+          if [[ $STAGE == 'dev' ]]; then
+            echo "{}" > prod-stack-output.json
+            npm version prepatch --preid dev
+            npm publish --access=public --tag dev
+          else
+            npm version patch
+            npm publish --access=public
+          fi
+      - name: Add all changes and check if we need to commit files
+        id: commit
+        shell: bash
+        run: |
+          git add --all
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "nothing changed"
+            echo "::set-output name=PUSH::false"
+          else
+            echo "trying to commit"
+            git commit -m "auto push from workflow run"
+            echo "::set-output name=PUSH::true"
+          fi
+      - name: if something committed - Push changes out
+        if: steps.commit.outputs.PUSH == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.localenv.outputs.BRANCH }}

@@ -1,0 +1,29 @@
+digraph {
+        node [shape=plaintext fontname="Arial" fontsize="10"]
+        edge [fontname="Arial" fontsize="10"]
+        subgraph cluster0 {
+            label="internal"
+            fontname="Arial"
+            fontsize=10
+            color=grey
+            style=dashed
+            node0 [ shape=box color=orange label=<
+            <table border="0" cellborder="0" cellspacing="0">
+            <tr><td align="left"><font point-size="14">create.js</font></td></tr>
+            </table>>]
+    }
+    subgraph cluster1 {
+            label="input"
+            fontname="Arial"
+            fontsize=10
+            color=grey
+            style=dashed
+            node1 [ shape=invhouse color=orange fontsize=12 label="POST\n/"]
+    }
+    node1 -> node0 [color=orange arrowhead=nonenonenoneoinv]
+
+    labelloc="t"
+    fontname="Arial"
+    fontsize="20"
+    label="sst-ms-template"
+}
