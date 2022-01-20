@@ -1,5 +1,5 @@
 # Serverless microservice setup
-![full workflow](https://github.com/wintvelt/sst-ms-template/actions/workflows/testPublishDeploy.yml/badge.svg)
+![full workflow](https://github.com/wintvelt/sst-iam-test/actions/workflows/testPublishDeploy.yml/badge.svg)
 
 # Not much to see here
 
