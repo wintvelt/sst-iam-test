@@ -2,7 +2,7 @@ import * as sst from "@serverless-stack/resources";
 import * as cdk from "@aws-cdk/core"
 
 const routeNames = {
-    put: "POST   /",
+    put: "POST   /users",
 }
 
 const envProps = (env) => ({
@@ -21,6 +21,10 @@ export default class ApiStack extends sst.Stack {
         // Create the API
         this.api = new sst.Api(this, "api", {
             defaultAuthorizationType: sst.ApiAuthorizationType.AWS_IAM,
+            customDomain: {
+                domainName: "api-dev.clubalmanac.com",
+                path: "v2",
+            },
             routes: {
                 [routeNames.put]: new sst.Function(this, "postHandler", {
                     handler: "src/create.handler",

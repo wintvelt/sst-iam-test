@@ -18,7 +18,7 @@ const apiParams = {
     invokeUrl: 'https://6uje6v0pqi.execute-api.eu-central-1.amazonaws.com',
     apiKey: '',
     apiGatewayRegion: 'eu-central-1',
-    pathTemplate: '/',
+    pathTemplate: '/users',
     method: 'POST',
     body: '{"sender":"bash"}',
     params: "{}",
