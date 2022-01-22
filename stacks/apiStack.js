@@ -1,5 +1,6 @@
 import * as sst from "@serverless-stack/resources";
-import * as cdk from "@aws-cdk/core"
+import * as cdk from "aws-cdk-lib"
+import { DomainName } from "@aws-cdk/aws-apigatewayv2-alpha"
 
 const routeNames = {
     put: "POST   /users",
@@ -21,9 +22,16 @@ export default class ApiStack extends sst.Stack {
         // Create the API
         this.api = new sst.Api(this, "api", {
             defaultAuthorizationType: sst.ApiAuthorizationType.AWS_IAM,
+            // customDomain: {
+            //     domainName: DomainName.fromDomainNameAttributes(this, "MyDomain", {
+            //         name: 'api-dev.clubalmanac.com',
+            //     }),
+            //     path: 'v2'
+            // },
+            // does not work - old domain = edge, which does not mix with new v2 http gateway
             customDomain: {
-                domainName: "api-dev.clubalmanac.com",
-                path: "v2",
+                domainName: "apiv2-dev.clubalmanac.com",
+                hostedZone: "clubalmanac.com",
             },
             routes: {
                 [routeNames.put]: new sst.Function(this, "postHandler", {

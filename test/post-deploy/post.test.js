@@ -15,7 +15,8 @@ const authParams = {
 }
 const apiParams = {
     // voor makeRequest
-    invokeUrl: 'https://6uje6v0pqi.execute-api.eu-central-1.amazonaws.com',
+    // invokeUrl: 'https://6uje6v0pqi.execute-api.eu-central-1.amazonaws.com',
+    invokeUrl: 'https://apiv2-dev.clubalmanac.com',
     apiKey: '',
     apiGatewayRegion: 'eu-central-1',
     pathTemplate: '/users',
