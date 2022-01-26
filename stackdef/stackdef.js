@@ -3,7 +3,14 @@ module.exports = {
     nodes: [
         {
             name: "create.js",
-            subs: ["POST /"]
+            subs: ["POST /users"]
+        },
+        {
+            name: "get.js",
+            subs: ["GET /s3test"],
+            queries: [
+                { serviceName: 'blob-images-dev', name: 'bucket' }
+            ]
         },
     ]
 }

@@ -4,7 +4,7 @@
       "name": "create.js",
       "subs": [
         {
-          "name": "POST /"
+          "name": "POST /users"
         }
       ],
       "type": "function",
@@ -12,20 +12,69 @@
       "isQuery": true,
       "nodeId": "node0"
     },
-    "POST /": {
-      "name": "POST /",
+    "get.js": {
+      "name": "get.js",
+      "subs": [
+        {
+          "name": "GET /s3test"
+        }
+      ],
+      "queries": [
+        {
+          "serviceName": "blob-images-dev",
+          "name": "bucket"
+        }
+      ],
+      "type": "function",
+      "cluster": "internal",
+      "isQuery": true,
+      "nodeId": "node1"
+    },
+    "POST /users": {
+      "name": "POST /users",
       "type": "API",
       "cluster": "input",
       "isQuery": true,
-      "nodeId": "node1"
+      "nodeId": "node2"
+    },
+    "GET /s3test": {
+      "name": "GET /s3test",
+      "type": "API",
+      "cluster": "input",
+      "isQuery": true,
+      "nodeId": "node3"
+    },
+    "blob-images-dev-bucket": {
+      "name": "bucket",
+      "serviceName": "blob-images-dev",
+      "type": "bucket",
+      "cluster": "extOutput",
+      "nodeId": "node4"
     }
   },
   "edges": [
     {
-      "name": "POST /",
+      "name": "POST /users",
       "depType": "sub",
-      "fromName": "POST /",
+      "fromName": "POST /users",
       "toName": "create.js",
+      "async": false,
+      "isQuery": true
+    },
+    {
+      "name": "GET /s3test",
+      "depType": "sub",
+      "fromName": "GET /s3test",
+      "toName": "get.js",
+      "async": false,
+      "isQuery": true
+    },
+    {
+      "serviceName": "blob-images-dev",
+      "name": "bucket",
+      "depType": "query",
+      "fromName": "get.js",
+      "toName": "blob-images-dev-bucket",
       "async": false,
       "isQuery": true
     }

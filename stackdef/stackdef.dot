@@ -11,6 +11,10 @@ digraph {
             <table border="0" cellborder="0" cellspacing="0">
             <tr><td align="left"><font point-size="14">create.js</font></td></tr>
             </table>>]
+        node1 [ shape=box color=orange label=<
+            <table border="0" cellborder="0" cellspacing="0">
+            <tr><td align="left"><font point-size="14">get.js</font></td></tr>
+            </table>>]
     }
     subgraph cluster1 {
             label="input"
@@ -18,9 +22,20 @@ digraph {
             fontsize=10
             color=grey
             style=dashed
-            node1 [ shape=invhouse color=orange fontsize=12 label="POST\n/"]
+            node2 [ shape=invhouse color=orange fontsize=12 label="POST\n/users"]
+        node3 [ shape=invhouse color=orange fontsize=12 label="GET\n/s3test"]
     }
-    node1 -> node0 [color=orange arrowhead=nonenonenoneoinv]
+    subgraph cluster2 {
+            label="extOutput"
+            fontname="Arial"
+            fontsize=10
+            color=grey
+            style=dashed
+            node4 [shape=folder label="blob-images-dev\nbucket"]
+    }
+    node2 -> node0 [color=orange arrowhead=nonenonenoneoinv]
+    node3 -> node1 [color=orange arrowhead=nonenonenoneoinv]
+    node1 -> node4 [color=orange arrowhead=nonenonenoneoinv]
 
     labelloc="t"
     fontname="Arial"
