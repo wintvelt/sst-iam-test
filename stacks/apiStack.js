@@ -1,10 +1,13 @@
 import * as sst from "@serverless-stack/resources";
 import * as cdk from "aws-cdk-lib"
-import { DomainName } from "@aws-cdk/aws-apigatewayv2-alpha"
+import { s3Permissions } from "../src/libs/permissions-lib";
 
 const routeNames = {
-    put: "POST   /users",
+    post: "POST   /users",
+    get: "GET  /s3test"
 }
+
+const bucketArn = "arn:aws:s3:::blob-images-dev/*"
 
 const envProps = (env) => ({
     SECRET_PUBLISH_TOKEN: env.SECRET_PUBLISH_TOKEN,
@@ -34,9 +37,14 @@ export default class ApiStack extends sst.Stack {
                 hostedZone: "clubalmanac.com",
             },
             routes: {
-                [routeNames.put]: new sst.Function(this, "postHandler", {
+                [routeNames.post]: new sst.Function(this, "postHandler", {
                     handler: "src/create.handler",
                     environment: envProps(process.env),
+                }),
+                [routeNames.get]: new sst.Function(this, "getHandler", {
+                    handler: "src/get.handler",
+                    environment: envProps(process.env),
+                    permissions: s3Permissions(bucketArn)
                 }),
             },
         });
@@ -44,6 +52,9 @@ export default class ApiStack extends sst.Stack {
         this.getAllFunctions().forEach(fn =>
             cdk.Tags.of(fn).add("lumigo:auto-trace", "true")
         )
+
+        // for tracing of API in logz.io (lumigo does not track api, so misses gateway errors)
+        cdk.Tags.of(this).add("logz:trace", "true")
 
         const outputs = {
             "url": this.api.url,

@@ -39,6 +39,7 @@
     "@middy/http-json-body-parser": "^2.5.5",
     "@middy/validator": "^2.5.5",
     "@serverless-stack/cli": "0.60.4",
-    "@serverless-stack/resources": "0.60.4"
+    "@serverless-stack/resources": "0.60.4",
+    "blob-common": "^1.4.1"
   }
 }

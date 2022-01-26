@@ -5,3 +5,5 @@
 
 This is a service to test AWS_IAM authorization on AWS API Gateways.
 Includes some tests in `/test` folder
+
+NB: this service is to be deployed to prod-stack only. Will expose on api-dev.clubalmanac.com

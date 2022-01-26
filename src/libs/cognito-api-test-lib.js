@@ -96,13 +96,13 @@ function makeRequest(argv) {
     var additionalParams = JSON.parse(argv.additionalParams);
 
     var body = "";
-    if (argv.body.startsWith("@")) {
+    if (argv.body?.startsWith("@")) {
         // Body from file
         const bodyFromFile = argv.body.replace(/^@/, "");
         const contentFromFile = fs.readFileSync(bodyFromFile);
         body = JSON.parse(contentFromFile);
     }
-    else {
+    else if (argv.body) {
         body = JSON.parse(argv.body);
     }
 
